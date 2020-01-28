@@ -1,0 +1,25 @@
+{
+  "name": "token-exchange-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/denisponizhan/token-exchange-demo.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/denisponizhan/token-exchange-demo/issues"
+  },
+  "homepage": "https://github.com/denisponizhan/token-exchange-demo#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^2.4.0"
+  }
+}
