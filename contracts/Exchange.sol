@@ -45,14 +45,61 @@ contract Exchange {
         quote = _quote;
     }
 
+    function getBid(uint256 index) public view returns (uint256, uint256) {
+        Order storage bid = bids[index];
+        return (bid.price, bid.amount);
+    }
+
+    function getAsk(uint256 index) public view returns (uint256, uint256) {
+        Order storage ask = asks[index];
+        return (ask.price, ask.amount);
+    }
+
     function buy(uint256 _price, uint256 _amount) public {
         require(_amount > 0, "Amount must be greater than zero");
 
         if (asks.length > 0 && _price >= asks[asks.length - 1].price) {
-            // Match Orders
-            // Transfer from
-            // Delete Order From Sellbook
-            // Adjust Sum
+            Order storage ask = asks[asks.length - 1];
+
+            uint256 transferAmount;
+            uint256 toAdd;
+
+            if (_amount == ask.amount) {
+                transferAmount = _amount;
+                swapToBuy(
+                    base,
+                    quote,
+                    msg.sender,
+                    ask.sender,
+                    transferAmount,
+                    _price
+                );
+                delete asks[asks.length - 1];
+            } else if (_amount < ask.amount) {
+                transferAmount = _amount;
+                ask.amount = ask.amount - _amount;
+                swapToBuy(
+                    base,
+                    quote,
+                    msg.sender,
+                    ask.sender,
+                    transferAmount,
+                    _price
+                );
+            } else if (_amount > ask.amount) {
+                transferAmount = ask.amount;
+                ask.amount = _amount - ask.amount;
+                swapToBuy(
+                    base,
+                    quote,
+                    msg.sender,
+                    ask.sender,
+                    transferAmount,
+                    _price
+                );
+                delete asks[asks.length - 1];
+                addToBids(_price, toAdd);
+            }
         } else {
             addToBids(_price, _amount);
         }
@@ -62,10 +109,47 @@ contract Exchange {
         require(_amount > 0, "Amount must be greater than zero");
 
         if (bids.length > 0 && _price <= bids[bids.length - 1].price) {
-            // Match Orders
-            // Transfer from
-            // Delete Order From BuyBook
-            // Adjust Sum
+            Order storage bid = bids[bids.length - 1];
+
+            uint256 transferAmount;
+            uint256 toAdd;
+
+            if (_amount == bid.amount) {
+                transferAmount = _amount;
+                swapToSell(
+                    base,
+                    quote,
+                    msg.sender,
+                    bid.sender,
+                    transferAmount,
+                    _price
+                );
+                delete bids[bids.length - 1];
+            } else if (_amount < bid.amount) {
+                transferAmount = _amount;
+                bid.amount = bid.amount - _amount;
+                swapToSell(
+                    base,
+                    quote,
+                    msg.sender,
+                    bid.sender,
+                    transferAmount,
+                    _price
+                );
+            } else if (_amount > bid.amount) {
+                transferAmount = bid.amount;
+                toAdd = _amount - bid.amount;
+                swapToSell(
+                    base,
+                    quote,
+                    msg.sender,
+                    bid.sender,
+                    transferAmount,
+                    _price
+                );
+                delete bids[bids.length - 1];
+                addToAsks(_price, toAdd);
+            }
         } else {
             addToAsks(_price, _amount);
         }
@@ -79,7 +163,11 @@ contract Exchange {
             bids.push(
                 Order({price: _price, amount: _amount, sender: msg.sender})
             );
-            ERC20(quote).transferFrom(msg.sender, address(this), _amount);
+            ERC20(quote).transferFrom(
+                msg.sender,
+                address(this),
+                _amount * _price
+            );
             return true;
         }
         uint256 innerLength = bids.length - 1;
@@ -96,7 +184,7 @@ contract Exchange {
                     ERC20(quote).transferFrom(
                         msg.sender,
                         address(this),
-                        _amount
+                        _amount * _price
                     );
                     return true;
                 } else {
@@ -112,7 +200,7 @@ contract Exchange {
                     ERC20(quote).transferFrom(
                         msg.sender,
                         address(this),
-                        _amount
+                        _amount * _price
                     );
                     return true;
                 }
@@ -123,7 +211,7 @@ contract Exchange {
             bids[innerLength - k + 1] = bids[innerLength - k];
         }
         bids[0] = Order({price: _price, amount: _amount, sender: msg.sender});
-        ERC20(quote).transferFrom(msg.sender, address(this), _amount);
+        ERC20(quote).transferFrom(msg.sender, address(this), _amount * _price);
         return true;
 
     }
@@ -184,4 +272,27 @@ contract Exchange {
         return true;
     }
 
+    function swapToBuy(
+        address _base,
+        address _quote,
+        address _sender,
+        address _receiver,
+        uint256 _amount,
+        uint256 _price
+    ) private {
+        ERC20(_quote).transferFrom(_sender, _receiver, _amount * _price);
+        ERC20(_base).transfer(_sender, _amount);
+    }
+
+    function swapToSell(
+        address _base,
+        address _quote,
+        address _sender,
+        address _receiver,
+        uint256 _amount,
+        uint256 _price
+    ) private {
+        ERC20(_base).transferFrom(_sender, _receiver, _amount);
+        ERC20(_quote).transfer(_sender, _amount * _price);
+    }
 }
