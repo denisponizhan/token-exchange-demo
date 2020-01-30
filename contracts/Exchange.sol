@@ -61,8 +61,17 @@ contract Exchange {
         if (asks.length > 0 && _price >= asks[asks.length - 1].price) {
             Order storage ask = asks[asks.length - 1];
 
+            uint256 diff;
+            uint256 actualPrice;
             uint256 transferAmount;
             uint256 toAdd;
+
+            if (_price > ask.price) {
+                diff = _price - ask.price;
+                actualPrice = ask.price;
+            } else {
+                actualPrice = _price;
+            }
 
             if (_amount == ask.amount) {
                 transferAmount = _amount;
@@ -72,7 +81,7 @@ contract Exchange {
                     msg.sender,
                     ask.sender,
                     transferAmount,
-                    _price
+                    actualPrice
                 );
                 delete asks[asks.length - 1];
             } else if (_amount < ask.amount) {
@@ -84,7 +93,7 @@ contract Exchange {
                     msg.sender,
                     ask.sender,
                     transferAmount,
-                    _price
+                    actualPrice
                 );
             } else if (_amount > ask.amount) {
                 transferAmount = ask.amount;
@@ -95,11 +104,12 @@ contract Exchange {
                     msg.sender,
                     ask.sender,
                     transferAmount,
-                    _price
+                    actualPrice
                 );
                 delete asks[asks.length - 1];
-                addToBids(_price, toAdd);
+                addToBids(actualPrice, toAdd);
             }
+
         } else {
             addToBids(_price, _amount);
         }
@@ -111,8 +121,17 @@ contract Exchange {
         if (bids.length > 0 && _price <= bids[bids.length - 1].price) {
             Order storage bid = bids[bids.length - 1];
 
+            uint256 diff;
+            uint256 actualPrice;
             uint256 transferAmount;
             uint256 toAdd;
+
+            if (_price < bid.price) {
+                diff = bid.price - _price;
+                actualPrice = _price;
+            } else {
+                actualPrice = bid.price;
+            }
 
             if (_amount == bid.amount) {
                 transferAmount = _amount;
@@ -122,7 +141,7 @@ contract Exchange {
                     msg.sender,
                     bid.sender,
                     transferAmount,
-                    _price
+                    actualPrice
                 );
                 delete bids[bids.length - 1];
             } else if (_amount < bid.amount) {
@@ -134,7 +153,7 @@ contract Exchange {
                     msg.sender,
                     bid.sender,
                     transferAmount,
-                    _price
+                    actualPrice
                 );
             } else if (_amount > bid.amount) {
                 transferAmount = bid.amount;
@@ -145,7 +164,7 @@ contract Exchange {
                     msg.sender,
                     bid.sender,
                     transferAmount,
-                    _price
+                    actualPrice
                 );
                 delete bids[bids.length - 1];
                 addToAsks(_price, toAdd);
