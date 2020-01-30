@@ -1,8 +1,38 @@
 pragma solidity >=0.4.21 <0.7.0;
 
+interface ERC20 {
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address tokenOwner)
+        external
+        view
+        returns (uint256 balance);
+    function allowance(address tokenOwner, address spender)
+        external
+        view
+        returns (uint256 remaining);
+    function transfer(address to, uint256 tokens)
+        external
+        returns (bool success);
+    function approve(address spender, uint256 tokens)
+        external
+        returns (bool success);
+    function transferFrom(address from, address to, uint256 tokens)
+        external
+        returns (bool success);
+    event Transfer(address indexed from, address indexed to, uint256 tokens);
+    event Approval(
+        address indexed tokenOwner,
+        address indexed spender,
+        uint256 tokens
+    );
+}
+
 contract Exchange {
     Order[] public bids;
     Order[] public asks;
+
+    address public base;
+    address public quote;
 
     struct Order {
         uint256 price;
@@ -10,13 +40,17 @@ contract Exchange {
         address sender;
     }
 
-    constructor() public {}
+    constructor(address _base, address _quote) public {
+        base = _base;
+        quote = _quote;
+    }
 
     function buy(uint256 _price, uint256 _amount) public {
         require(_amount > 0, "Amount must be greater than zero");
 
         if (asks.length > 0 && _price >= asks[asks.length - 1].price) {
             // Match Orders
+            // Transfer from
             // Delete Order From Sellbook
             // Adjust Sum
         } else {
@@ -29,6 +63,7 @@ contract Exchange {
 
         if (bids.length > 0 && _price <= bids[bids.length - 1].price) {
             // Match Orders
+            // Transfer from
             // Delete Order From BuyBook
             // Adjust Sum
         } else {
@@ -44,6 +79,7 @@ contract Exchange {
             bids.push(
                 Order({price: _price, amount: _amount, sender: msg.sender})
             );
+            ERC20(quote).transferFrom(msg.sender, address(this), _amount);
             return true;
         }
         uint256 innerLength = bids.length - 1;
@@ -57,6 +93,11 @@ contract Exchange {
                             sender: msg.sender
                         })
                     );
+                    ERC20(quote).transferFrom(
+                        msg.sender,
+                        address(this),
+                        _amount
+                    );
                     return true;
                 } else {
                     bids.push(bids[innerLength]);
@@ -68,6 +109,11 @@ contract Exchange {
                         amount: _amount,
                         sender: msg.sender
                     });
+                    ERC20(quote).transferFrom(
+                        msg.sender,
+                        address(this),
+                        _amount
+                    );
                     return true;
                 }
             }
@@ -77,6 +123,7 @@ contract Exchange {
             bids[innerLength - k + 1] = bids[innerLength - k];
         }
         bids[0] = Order({price: _price, amount: _amount, sender: msg.sender});
+        ERC20(quote).transferFrom(msg.sender, address(this), _amount);
         return true;
 
     }
@@ -89,6 +136,7 @@ contract Exchange {
             asks.push(
                 Order({price: _price, amount: _amount, sender: msg.sender})
             );
+            ERC20(base).transferFrom(msg.sender, address(this), _amount);
             return true;
         }
         uint256 innerLength = asks.length - 1;
@@ -102,6 +150,11 @@ contract Exchange {
                             sender: msg.sender
                         })
                     );
+                    ERC20(base).transferFrom(
+                        msg.sender,
+                        address(this),
+                        _amount
+                    );
                     return true;
                 } else {
                     asks.push(asks[innerLength]);
@@ -113,6 +166,11 @@ contract Exchange {
                         amount: _amount,
                         sender: msg.sender
                     });
+                    ERC20(base).transferFrom(
+                        msg.sender,
+                        address(this),
+                        _amount
+                    );
                     return true;
                 }
             }
@@ -122,6 +180,7 @@ contract Exchange {
             asks[innerLength - k + 1] = asks[innerLength - k];
         }
         asks[0] = Order({price: _price, amount: _amount, sender: msg.sender});
+        ERC20(base).transferFrom(msg.sender, address(this), _amount);
         return true;
     }
 
