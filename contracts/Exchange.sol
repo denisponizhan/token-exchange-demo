@@ -88,7 +88,7 @@ contract Exchange {
                 );
             } else if (_amount > ask.amount) {
                 transferAmount = ask.amount;
-                ask.amount = _amount - ask.amount;
+                toAdd = _amount - ask.amount;
                 swapToBuy(
                     base,
                     quote,
