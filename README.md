@@ -20,5 +20,6 @@ Use the package manager [npm](https://www.npmjs.com/products/teams?utm_source=ad
 
 ```bash
 > npm i
+> truffle compile --all
 > truffle test
 ```
